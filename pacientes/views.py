@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from .models import Pacientes, Tarefas, Consultas
 from django.contrib import messages
 from django.contrib.messages import constants
@@ -37,7 +37,11 @@ def paciente_view(request, id):
     if request.method == "GET":
         tarefas = Tarefas.objects.all()
         consultas = Consultas.objects.filter(paciente=paciente)
-        return render(request, 'paciente.html', {'paciente': paciente, 'tarefas': tarefas, 'consultas': consultas})
+        
+        tuple_grafico = ([str(i.data) for i in consultas], [str(i.humor) for i in consultas])
+
+        return render(request, 'paciente.html', {'paciente': paciente, 'tarefas': tarefas, 'consultas': consultas, 'tuple_grafico': tuple_grafico})
+    
     elif request.method == "POST":
         humor = request.POST.get('humor')
         registro_geral = request.POST.get('registro_geral')
@@ -78,4 +82,6 @@ def excluir_consulta(request, id):
 
 def consulta_publica(request, id):
     consulta = Consultas.objects.get(id=id)
+    if not consulta.paciente.pagamento_em_dia:
+        raise Http404()
     return render(request, 'consulta_publica.html', {'consulta': consulta})
